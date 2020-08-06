@@ -1,50 +1,43 @@
-from django.contrib import messages
-from django.contrib.auth import get_user_model
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
-from django.views.generic import DetailView, RedirectView, UpdateView
-
-User = get_user_model()
-
-
-class UserDetailView(LoginRequiredMixin, DetailView):
-
-    model = User
-    slug_field = "username"
-    slug_url_kwarg = "username"
+from django.shortcuts import render
+from django.contrib.auth import authenticate, login
+from .forms import SignUpForm
 
 
-user_detail_view = UserDetailView.as_view()
 
+def main(request):
+    if request.method == 'GET':
+        return render(request, 'users/main.html')
 
-class UserUpdateView(LoginRequiredMixin, UpdateView):
+    elif request.method == 'POST':
+            username = request.POST['username']
+            password = request.POST['password']
+            user = authenticate(request, username=username,password=password)
+            if user is not None:
+                login(request,user) 
+                return HttpResponseRedirect(reverse('posts:index'))
+            else:
+                return render(request, 'users/main.html')
 
-    model = User
-    fields = ["name"]
+def signup(request):
+    if request.method == 'GET':
+        form = SignUpForm()
+        return render(request, 'users/signup.html',{'form':form})
 
-    def get_success_url(self):
-        return reverse("users:detail", kwargs={"username": self.request.user.username})
+    elif request.method == 'POST':
+        form = SignUpForm(request.POST)
 
-    def get_object(self):
-        return User.objects.get(username=self.request.user.username)
+        if form.is_valid():
+            form.save()
 
-    def form_valid(self, form):
-        messages.add_message(
-            self.request, messages.INFO, _("Infos successfully updated")
-        )
-        return super().form_valid(form)
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
 
+            user = authenticate(request, username=username,password=password)
 
-user_update_view = UserUpdateView.as_view()
-
-
-class UserRedirectView(LoginRequiredMixin, RedirectView):
-
-    permanent = False
-
-    def get_redirect_url(self):
-        return reverse("users:detail", kwargs={"username": self.request.user.username})
-
-
-user_redirect_view = UserRedirectView.as_view()
+            if user is not None:
+                login(request,user) 
+                return HttpResponseRedirect(reverse('posts:index'))
+            
+        return render(request, 'users/main.html')
