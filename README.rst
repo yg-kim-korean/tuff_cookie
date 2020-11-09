@@ -1,5 +1,6 @@
 Tuff Cookie
 ===========
+유튜브 교육을 통해 dJango - cookiecutter를 활용한 프로젝트
 
 TO-DO
 -----------
